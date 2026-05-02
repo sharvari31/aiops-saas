@@ -1,0 +1,94 @@
+version: '3.9'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth_service
+      - metrics_service
+    networks:
+      - aiops-network
+
+  auth_service:
+    build: ./backend/auth_service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://aiops:aiops123@postgres:5432/aiops_db
+    depends_on:
+      - postgres
+    networks:
+      - aiops-network
+
+  metrics_service:
+    build: ./backend/metrics_service
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis
+    networks:
+      - aiops-network
+
+  ai_service:
+    build: ./backend/ai_service
+    ports:
+      - "8003:8003"
+    networks:
+      - aiops-network
+
+  alert_service:
+    build: ./backend/alert_service
+    ports:
+      - "8004:8004"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aiops-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: aiops
+      POSTGRES_PASSWORD: aiops123
+      POSTGRES_DB: aiops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aiops-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - aiops-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - aiops-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    networks:
+      - aiops-network
+
+volumes:
+  postgres_data:
+
+networks:
+  aiops-network:
+    driver: bridge

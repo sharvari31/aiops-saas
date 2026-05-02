@@ -1,0 +1,48 @@
+name: AIOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Test Auth Service
+        run: |
+          cd backend/auth_service
+          pip install -r requirements.txt
+          python -c "from main import app; print('Auth service OK')"
+      - name: Test AI Service
+        run: |
+          cd backend/ai_service
+          pip install -r requirements.txt
+          python -c "from main import app; print('AI service OK')"
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install and build
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+  docker-build:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build all Docker images
+        run: docker compose build
