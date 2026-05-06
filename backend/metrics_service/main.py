@@ -4,6 +4,7 @@ import psutil
 import time
 import httpx
 import asyncio
+import threading
 from datetime import datetime
 
 app = FastAPI(title="Metrics Service", version="1.0.0")
@@ -31,6 +32,11 @@ def get_real_metrics():
         "timestamp": int(time.time())
     }
 
+def stress_cpu():
+    end_time = time.time() + 30
+    while time.time() < end_time:
+        x = 99999 * 99999
+
 async def run_ai_pipeline():
     while True:
         try:
@@ -42,7 +48,6 @@ async def run_ai_pipeline():
                 )
                 result = ai_response.json()
                 print(f"[AI] CPU:{m['cpu']}% MEM:{m['memory']}% → severity:{result['severity']} anomaly:{result['is_anomaly']}")
-
                 if result["is_anomaly"]:
                     await client.post(
                         f"{ALERT_SERVICE_URL}/alerts/create",
@@ -54,10 +59,8 @@ async def run_ai_pipeline():
                         }
                     )
                     print(f"[ALERT] Created {result['severity']} alert!")
-
         except Exception as e:
             print(f"[Pipeline Error] {e}")
-
         await asyncio.sleep(60)
 
 @app.on_event("startup")
@@ -95,3 +98,10 @@ def get_summary():
         "total_requests": 0,
         "error_rate": 0.0
     }
+
+@app.post("/metrics/stress-test")
+def stress_test():
+    thread = threading.Thread(target=stress_cpu)
+    thread.daemon = True
+    thread.start()
+    return {"message": "CPU stress test started for 30 seconds"}
