@@ -9,10 +9,9 @@ import os
 
 app = FastAPI(title="Alert Service", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-SENDER_EMAIL = "sharvarigajendragadkar@gmail.com"
-ALERT_EMAIL = "sharvarigajendragadkar@gmail.com"
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "sharvarigajendragadkar@gmail.com")
+ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "sharvarigajendragadkar@gmail.com")
 
 alerts_store = [
     {
